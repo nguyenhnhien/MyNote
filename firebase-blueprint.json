@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "Poem": {
+      "title": "Poem",
+      "description": "Individual poem entries.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the poem" },
+        "content": { "type": "string", "description": "The full text/content of the poem" },
+        "date": { "type": "string", "description": "Creation date provided by the author" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "date", "createdAt"]
+    },
+    "Prose": {
+      "title": "Prose",
+      "description": "Essays, thoughts, and letters.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the prose entry" },
+        "excerpt": { "type": "string", "description": "Short summary or introduction" },
+        "content": { "type": "string", "description": "The full content" },
+        "date": { "type": "string", "description": "Display date" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "excerpt", "date", "createdAt"]
+    },
+    "GalleryItem": {
+      "title": "Gallery Item",
+      "description": "Images with descriptions for the gallery.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the image/piece" },
+        "desc": { "type": "string", "description": "Detailed description" },
+        "category": { "type": "string", "enum": ["Phong cảnh", "Nhân vật"] },
+        "seed": { "type": "string", "description": "Picsum seed or image identifier" },
+        "align": { "type": "string", "enum": ["left", "right"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "desc", "category", "seed", "align", "createdAt"]
+    },
+    "SiteConfig": {
+      "title": "Site Configuration",
+      "description": "Global settings for headers, navigation, and background.",
+      "type": "object",
+      "properties": {
+        "homeTagline": { "type": "string" },
+        "navLabels": { "type": "object" },
+        "pageTitles": { "type": "object" },
+        "pageSubtitles": { "type": "object" },
+        "bgMode": { "type": "string", "enum": ["water", "slideshow", "auto"] },
+        "slideImages": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "firestore": {
+    "/config/{docId}": {
+      "schema": "SiteConfig",
+      "description": "Global site settings"
+    },
+    "/poems/{poemId}": {
+      "schema": "Poem",
+      "description": "Collection of poems"
+    },
+    "/prose/{proseId}": {
+      "schema": "Prose",
+      "description": "Collection of prose/thoughts"
+    },
+    "/gallery/{itemId}": {
+      "schema": "GalleryItem",
+      "description": "Collection of gallery items"
+    }
+  }
+}

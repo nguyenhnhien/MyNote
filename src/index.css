@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Dancing+Script:wght@400..700&family=Ruthie&family=Amatic+SC:wght@400;700&family=Spectral:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Georgia", serif;
+  --font-cursive: "Dancing Script", cursive;
+  --font-ruthie: "Ruthie", cursive;
+  --font-amatic: "Amatic SC", cursive;
+  --font-spectral: "Spectral", serif;
+  --font-arizona: "Arizona", "Playfair Display", serif;
+  
+  --color-water-deep: #0a4d68;
+  --color-water-mid: #088395;
+  --color-water-light: #05bfdb;
+  --color-sunlight: #fefeff;
+  --color-paper: rgba(255, 255, 255, 0.85);
+}
+
+@layer base {
+  body {
+    @apply bg-water-deep text-paper font-serif selection:bg-water-light/30;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+  }
+
+  .film-grain {
+    position: relative;
+  }
+  
+  .film-grain::after {
+    content: "";
+    @apply absolute inset-0 pointer-events-none opacity-[0.03] z-[100];
+    background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
+    animation: grain 0.5s steps(1) infinite;
+  }
+
+  @keyframes grain {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(1%, 2%); }
+    40% { transform: translate(-2%, 1%); }
+    60% { transform: translate(2%, -1%); }
+    80% { transform: translate(-1%, -2%); }
+  }
+
+  .flicker {
+    animation: flicker 4s linear infinite;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.97; }
+    52% { opacity: 1; }
+    54% { opacity: 0.98; }
+    55% { opacity: 1; }
+  }
+}

@@ -51,6 +51,34 @@
         "bgMode": { "type": "string", "enum": ["water", "slideshow", "auto"] },
         "slideImages": { "type": "array", "items": { "type": "string" } }
       }
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Multi-chapter story titles and cover info.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "description": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "isPrivate": { "type": "boolean" },
+        "password": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "author", "description", "createdAt"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "Individual chapters for a story.",
+      "type": "object",
+      "properties": {
+        "storyId": { "type": "string" },
+        "chapterNumber": { "type": "integer" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["storyId", "chapterNumber", "title", "content", "createdAt"]
     }
   },
   "firestore": {
@@ -69,6 +97,14 @@
     "/gallery/{itemId}": {
       "schema": "GalleryItem",
       "description": "Collection of gallery items"
+    },
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "Collection of long-form stories"
+    },
+    "/stories/{storyId}/chapters/{chapterId}": {
+      "schema": "Chapter",
+      "description": "Subcollection of story chapters"
     }
   }
 }

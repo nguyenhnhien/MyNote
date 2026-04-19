@@ -9,21 +9,24 @@ export const DEFAULT_CONFIG: SiteConfig = {
     about: "About Me",
     poems: "Người tình mùa đông",
     prose: "Viết lên gồng xiềng",
-    gallery: "Yên hoa lộng nguyệt"
+    gallery: "Yên hoa lộng nguyệt",
+    archive: "Lưu trữ"
   },
   pageTitles: {
     home: "nguyenhnhien",
     about: "About me",
     poems: "Người tình mùa đông",
     prose: "Viết lên gồng xiềng",
-    gallery: "Yên hoa lộng nguyệt"
+    gallery: "Yên hoa lộng nguyệt",
+    archive: "Khu vườn bí mật"
   },
   pageSubtitles: {
     home: "",
     about: "",
     poems: "Tôi thuộc về những vần thơ",
     prose: "Một thế giới khác",
-    gallery: "Nơi những mảnh ghép ký ức và giấc mơ hội ngộ"
+    gallery: "Nơi những mảnh ghép ký ức và giấc mơ hội ngộ",
+    archive: "Những câu chuyện chưa kể"
   },
   bgMode: 'auto',
   slideImages: [

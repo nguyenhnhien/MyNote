@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { WaterBackground } from './components/WaterBackground';
 import { HandwritingText, ClickRipple } from './components/HandwritingText';
 import { Page, NAV_ITEMS, SiteConfig } from './types';
-import { Home, About, Poems, Prose, Gallery, SystemSettings } from './components/Pages';
+import { Home, About, Poems, Prose, Gallery, Archive, SystemSettings } from './components/Pages';
 import { auth, signInWithGoogle } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { subscribeToConfig, DEFAULT_CONFIG } from './lib/config';
@@ -53,11 +53,17 @@ export default function App() {
         try {
           const loggedInUser = await signInWithGoogle();
           if (loggedInUser.email !== ADMIN_EMAIL) {
-            alert("Truy cập bị từ chối. Bạn không phải là quản trị viên được ủy quyền.");
+            alert(`Truy cập bị từ chối. Bạn đã đăng nhập bằng ${loggedInUser.email}, nhưng tài khoản này không phải là quản trị viên.`);
             await signOut(auth);
           }
-        } catch (error) {
-          alert("Xác thực thất bại.");
+        } catch (error: any) {
+          const errorMessage = error.message || "Không rõ nguyên nhân";
+          if (error.code === 'auth/popup-blocked') {
+            alert("Trình duyệt đã chặn cửa sổ đăng nhập. Vui lòng cho phép hiện cửa sổ bật lên (popup) và thử lại.");
+          } else {
+            alert(`Xác thực thất bại: ${errorMessage}`);
+          }
+          console.error("Auth Error:", error);
         }
       }
     }
@@ -65,11 +71,12 @@ export default function App() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'home': return <Home key="home" onExplore={() => setCurrentPage('about')} config={siteConfig} />;
+      case 'home': return <Home key="home" onExplore={() => setCurrentPage('about')} config={siteConfig} onAdminTrigger={handleLogoClick} />;
       case 'about': return <About key="about" config={siteConfig} isAdmin={isAdmin} />;
       case 'poems': return <Poems key="poems" isAdmin={isAdmin} config={siteConfig} />;
       case 'prose': return <Prose key="prose" isAdmin={isAdmin} config={siteConfig} />;
       case 'gallery': return <Gallery key="gallery" isAdmin={isAdmin} config={siteConfig} />;
+      case 'archive': return <Archive key="archive" isAdmin={isAdmin} config={siteConfig} />;
       // @ts-ignore - dynamic page for system settings
       case 'settings': return <SystemSettings key="settings" config={siteConfig} />;
       default: return <Home onExplore={() => setCurrentPage('about')} config={siteConfig} />;
@@ -115,19 +122,25 @@ export default function App() {
             )}
           </div>
 
-          {/* Secret Admin Trigger */}
-          <div className="opacity-0 hover:opacity-10 transition-opacity cursor-pointer text-[8px]" onClick={handleLogoClick}>
-            {isAdmin ? "[Quản trị viên]" : "[Secret]"}
-          </div>
+          {/* Right side controls */}
+          <div className="flex items-center gap-6">
+            {/* Secret Admin Trigger */}
+            <div 
+              className="opacity-0 hover:opacity-20 transition-opacity cursor-pointer text-[10px] py-2 px-3 glass rounded-full" 
+              onClick={handleLogoClick}
+            >
+              {isAdmin ? "[Quản trị viên]" : "Archive"}
+            </div>
 
-          {/* Mobile Menu Trigger */}
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-paper p-2 flex flex-col gap-1.5"
-          >
-            <div className="w-6 h-[1px] bg-paper" />
-            <div className="w-6 h-[1px] bg-paper" />
-          </button>
+            {/* Mobile Menu Trigger */}
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden text-paper p-2 flex flex-col gap-1.5"
+            >
+              <div className="w-6 h-[1px] bg-paper" />
+              <div className="w-6 h-[1px] bg-paper" />
+            </button>
+          </div>
         </div>
       </nav>
 

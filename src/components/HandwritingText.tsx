@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export const HandwritingText: React.FC<{ text?: string }> = ({ text = "nguyenhnhien" }) => {
+export const HandwritingText: React.FC<{ text?: string, onClick?: () => void }> = ({ text = "nguyenhnhien", onClick }) => {
   const letters = Array.from(text);
   
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block cursor-pointer" onClick={onClick}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

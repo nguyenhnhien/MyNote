@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { HandwritingText } from './HandwritingText';
-import { Quote, Image as ImageIcon, MapPin, Feather, Plus } from 'lucide-react';
+import { Quote, Image as ImageIcon, MapPin, Feather, Plus, Book, Lock, Unlock, ChevronRight, ChevronLeft, Trash2, Edit3 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { 
   collection, 
@@ -12,9 +12,11 @@ import {
   doc,
   query, 
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  getDocs,
+  where
 } from 'firebase/firestore';
-import { SiteConfig, Page } from '../types';
+import { SiteConfig, Page, Story, Chapter } from '../types';
 import { updateConfig } from '../lib/config';
 
 const PageTransition = ({ children }: { children: React.ReactNode }) => (
@@ -29,11 +31,11 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => (
   </motion.div>
 );
 
-export const Home: React.FC<{ onExplore: () => void, config: SiteConfig }> = ({ onExplore, config }) => (
+export const Home: React.FC<{ onExplore: () => void, config: SiteConfig, onAdminTrigger?: () => void }> = ({ onExplore, config, onAdminTrigger }) => (
   <PageTransition>
     <div className="flex-1 flex flex-col items-center justify-center min-h-[70vh] relative py-20">
       <div className="text-center z-10">
-        <HandwritingText text={config.pageTitles.home || "nguyenhnhien"} />
+        <HandwritingText text={config.pageTitles.home || "nguyenhnhien"} onClick={onAdminTrigger} />
         <motion.div
           initial={{ opacity: 0, letterSpacing: '0px' }}
           animate={{ opacity: 0.6, letterSpacing: '8px' }}
@@ -397,6 +399,278 @@ export const Gallery: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
             </motion.div>
           ))}
         </div>
+      </div>
+    </PageTransition>
+  );
+};
+
+export const Archive: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ isAdmin, config }) => {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [unlockPasswords, setUnlockPasswords] = useState<Record<string, string>>({});
+  const [unlockedStories, setUnlockedStories] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const q = query(collection(db, 'stories'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Story));
+      setStories(docs);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (selectedStory) {
+      const q = query(
+        collection(db, `stories/${selectedStory.id}/chapters`), 
+        orderBy('chapterNumber', 'asc')
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+        setChapters(docs);
+      });
+      return () => unsubscribe();
+    } else {
+      setChapters([]);
+      setSelectedChapter(null);
+    }
+  }, [selectedStory]);
+
+  const addStory = async () => {
+    const title = prompt("Tên bộ truyện:");
+    const desc = prompt("Mô tả ngắn:");
+    const isPrivate = confirm("Bộ truyện này có cần mật khẩu không?");
+    let password = "";
+    if (isPrivate) {
+      password = prompt("Nhập mật khẩu cho bộ truyện:") || "";
+    }
+    
+    if (title && desc) {
+      await addDoc(collection(db, 'stories'), {
+        title,
+        description: desc,
+        author: "nguyenhnhien",
+        isPrivate,
+        password,
+        createdAt: serverTimestamp()
+      });
+    }
+  };
+
+  const addChapter = async () => {
+    if (!selectedStory) return;
+    const title = prompt("Tiêu đề chương:");
+    const content = prompt("Nội dung chương:");
+    const num = chapters.length + 1;
+    
+    if (title && content) {
+      await addDoc(collection(db, `stories/${selectedStory.id}/chapters`), {
+        storyId: selectedStory.id,
+        chapterNumber: num,
+        title,
+        content,
+        createdAt: serverTimestamp()
+      });
+    }
+  };
+
+  const handleUnlock = (story: Story) => {
+    const input = unlockPasswords[story.id];
+    if (input === story.password || isAdmin) {
+      setUnlockedStories(prev => ({ ...prev, [story.id]: true }));
+    } else {
+      alert("Mật khẩu không chính xác.");
+    }
+  };
+
+  const deleteStory = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm("Xóa toàn bộ truyện và các chương liên quan?")) {
+      await deleteDoc(doc(db, 'stories', id));
+    }
+  };
+
+  if (selectedChapter && selectedStory) {
+    return (
+      <PageTransition>
+        <div className="max-w-3xl mx-auto space-y-12">
+          <button 
+            onClick={() => setSelectedChapter(null)}
+            className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+          >
+            <ChevronLeft size={14} /> Quay lại danh sách chương
+          </button>
+          
+          <article className="glass p-12 rounded-[40px] space-y-10 min-h-[60vh]">
+            <header className="text-center space-y-4 border-b border-white/5 pb-10">
+              <div className="text-[10px] uppercase tracking-[4px] opacity-40">Chương {selectedChapter.chapterNumber}</div>
+              <h2 className="text-5xl font-arizona text-white">{selectedChapter.title}</h2>
+            </header>
+            
+            <div className="font-spectral text-xl leading-relaxed text-paper whitespace-pre-line text-justify first-letter:text-5xl first-letter:font-ruthie first-letter:mr-3 first-letter:float-left first-letter:text-white">
+              {selectedChapter.content}
+            </div>
+          </article>
+
+          <div className="flex justify-between items-center py-10">
+             <button 
+               disabled={selectedChapter.chapterNumber <= 1}
+               onClick={() => setSelectedChapter(chapters.find(c => c.chapterNumber === selectedChapter.chapterNumber - 1) || null)}
+               className="flex items-center gap-4 text-[10px] uppercase tracking-[3px] opacity-40 hover:opacity-100 disabled:opacity-10 transition-all font-bold"
+             >
+               <ChevronLeft size={16} /> Chương trước
+             </button>
+             <button 
+               disabled={selectedChapter.chapterNumber >= chapters.length}
+               onClick={() => setSelectedChapter(chapters.find(c => c.chapterNumber === selectedChapter.chapterNumber + 1) || null)}
+               className="flex items-center gap-4 text-[10px] uppercase tracking-[3px] opacity-40 hover:opacity-100 disabled:opacity-10 transition-all font-bold"
+             >
+               Chương sau <ChevronRight size={16} />
+             </button>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  if (selectedStory) {
+    return (
+      <PageTransition>
+        <div className="max-w-4xl mx-auto space-y-12">
+          <button 
+            onClick={() => setSelectedStory(null)}
+            className="flex items-center gap-2 text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+          >
+            <ChevronLeft size={14} /> Quay lại Lưu trữ
+          </button>
+
+          <div className="grid md:grid-cols-[1fr_2fr] gap-12">
+            <div className="space-y-6">
+              <div className="aspect-[3/4] glass rounded-3xl overflow-hidden p-3">
+                <div className="w-full h-full bg-water-surface rounded-2xl flex items-center justify-center">
+                  <Book size={60} className="opacity-10" />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-3xl font-ruthie text-white">{selectedStory.title}</h3>
+                <p className="text-sm text-paper/60 leading-relaxed font-spectral">{selectedStory.description}</p>
+                {isAdmin && (
+                  <button onClick={addChapter} className="w-full py-3 glass rounded-xl text-[10px] uppercase tracking-widest hover:bg-white/10 flex items-center justify-center gap-2">
+                    <Plus size={14} /> Thêm chương mới
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-[10px] uppercase tracking-[4px] opacity-40 border-b border-white/5 pb-4">Danh sách chương ({chapters.length})</h4>
+              <div className="grid gap-3">
+                {chapters.map(chapter => (
+                  <button 
+                    key={chapter.id}
+                    onClick={() => setSelectedChapter(chapter)}
+                    className="glass p-6 rounded-2xl flex items-center justify-between group hover:bg-white/5 transition-all text-left"
+                  >
+                    <div className="space-y-1">
+                      <div className="text-[9px] uppercase tracking-[2px] opacity-30">Chương {chapter.chapterNumber}</div>
+                      <div className="text-lg font-arizona text-white/80 group-hover:text-white transition-colors">{chapter.title}</div>
+                    </div>
+                    <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                  </button>
+                ))}
+                {chapters.length === 0 && (
+                  <div className="py-20 text-center opacity-20 italic">Chưa có chương nào được tải lên...</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  return (
+    <PageTransition>
+      <div className="space-y-16">
+        <header className="text-center space-y-4">
+           <h2 className="text-8xl font-ruthie text-white">{config.pageTitles.archive || "Khu vườn bí mật"}</h2>
+           <p className="text-3xl font-amatic text-paper/40 tracking-[4px] uppercase">{config.pageSubtitles.archive || "Những câu chuyện chưa kể"}</p>
+           {isAdmin && (
+             <button onClick={addStory} className="mt-8 mx-auto px-8 py-3 glass rounded-full flex items-center gap-3 text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
+               <Plus size={16} /> Tạo bộ truyện mới
+             </button>
+           )}
+        </header>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {stories.map(story => {
+            const isUnlocked = !story.isPrivate || unlockedStories[story.id] || isAdmin;
+            return (
+              <motion.div
+                key={story.id}
+                whileHover={{ y: -5 }}
+                className="glass rounded-[32px] overflow-hidden flex flex-col group h-full relative"
+              >
+                <div className="aspect-[16/10] bg-water-surface relative">
+                   <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                     <Book size={80} />
+                   </div>
+                   {story.isPrivate && !isUnlocked && (
+                     <div className="absolute inset-0 backdrop-blur-md bg-black/20 flex flex-col items-center justify-center p-6 space-y-4 text-center">
+                        <Lock size={30} className="text-water-light animate-pulse" />
+                        <div className="space-y-4">
+                          <p className="text-[10px] uppercase tracking-[3px] opacity-70">Truyện này cần mật khẩu</p>
+                          <div className="flex gap-2">
+                             <input 
+                               type="password"
+                               placeholder="Mật mã..."
+                               className="w-full bg-white/10 border border-white/20 px-4 py-2 rounded-full text-xs outline-none focus:border-water-light transition-colors"
+                               value={unlockPasswords[story.id] || ''}
+                               onChange={(e) => setUnlockPasswords(prev => ({ ...prev, [story.id]: e.target.value }))}
+                             />
+                             <button 
+                               onClick={() => handleUnlock(story)}
+                               className="px-4 py-2 bg-water-light text-water-deep rounded-full hover:scale-105 transition-transform"
+                             >
+                               <Unlock size={14} />
+                             </button>
+                          </div>
+                        </div>
+                     </div>
+                   )}
+                </div>
+
+                <div className="p-8 flex-1 flex flex-col justify-between space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-arizona text-white group-hover:text-water-light transition-colors">{story.title}</h3>
+                    <p className="text-xs text-paper/40 line-clamp-2 leading-relaxed italic">{story.description}</p>
+                  </div>
+                  
+                  <div className="flex justify-between items-center border-t border-white/5 pt-6">
+                    <button 
+                      disabled={!isUnlocked}
+                      onClick={() => setSelectedStory(story)}
+                      className="text-[10px] uppercase tracking-[3px] font-bold text-white hover:text-water-light disabled:opacity-20 transition-colors flex items-center gap-2"
+                    >
+                      {isUnlocked ? "Đọc ngay" : "Bị khóa"} <ChevronRight size={14} />
+                    </button>
+                    {isAdmin && (
+                      <button onClick={(e) => deleteStory(e, story.id)} className="text-red-400 opacity-20 hover:opacity-100 transition-opacity">
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {stories.length === 0 && (
+          <div className="py-40 text-center opacity-20 font-ruthie text-4xl">Chưa có mẩu chuyện nào được lưu giấu...</div>
+        )}
       </div>
     </PageTransition>
   );

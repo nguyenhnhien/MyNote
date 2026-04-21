@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { HandwritingText } from './HandwritingText';
-import { Quote, Image as ImageIcon, MapPin, Feather, Plus, Book, Lock, Unlock, ChevronRight, ChevronLeft, Trash2, Edit3 } from 'lucide-react';
+import { Quote, Image as ImageIcon, MapPin, Feather, Plus, Book, Lock, Unlock, ChevronRight, ChevronLeft, Trash2, Edit3, Upload, Camera, XCircle } from 'lucide-react';
 import { db } from '../lib/firebase';
+import { uploadImage } from '../lib/storage';
 import { 
   collection, 
   onSnapshot, 
@@ -38,9 +39,9 @@ export const Home: React.FC<{ onExplore: () => void, config: SiteConfig, onAdmin
         <HandwritingText text={config.pageTitles.home || "nguyenhnhien"} onClick={onAdminTrigger} />
         <motion.div
           initial={{ opacity: 0, letterSpacing: '0px' }}
-          animate={{ opacity: 0.6, letterSpacing: '8px' }}
+          animate={{ opacity: 1, letterSpacing: '8px' }}
           transition={{ delay: 2.2, duration: 1.5 }}
-          className="mt-8 text-[12px] uppercase font-light tracking-[8px] text-orange-100/70"
+          className="mt-8 text-[12px] uppercase font-medium tracking-[8px] text-white drop-shadow-lg"
         >
           {config.homeTagline || "Những vệt nước thời gian"}
         </motion.div>
@@ -51,7 +52,7 @@ export const Home: React.FC<{ onExplore: () => void, config: SiteConfig, onAdmin
         animate={{ opacity: 1 }}
         transition={{ delay: 3, duration: 1 }}
         onClick={onExplore}
-        className="mt-16 px-10 py-4 border border-white/20 rounded-full text-[10px] tracking-[4px] uppercase hover:bg-white/5 transition-all group font-light text-orange-50/80"
+        className="mt-16 px-10 py-4 border border-white/40 rounded-full text-[10px] tracking-[4px] uppercase bg-black/20 hover:bg-white/10 backdrop-blur-sm transition-all group font-bold text-white shadow-xl"
       >
         Khám phá
       </motion.button>
@@ -86,7 +87,7 @@ export const About: React.FC<{ config: SiteConfig, isAdmin: boolean }> = ({ conf
         <div className="relative group">
           <div className="aspect-[4/5] bg-water-surface rounded-2xl overflow-hidden border border-white/10">
              <img 
-               src="https://picsum.photos/seed/vintage-writer/800/1000" 
+               src={config.aboutImageUrl || "https://picsum.photos/seed/vintage-writer/800/1000"} 
                alt="About me" 
                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
                referrerPolicy="no-referrer"
@@ -311,23 +312,36 @@ export const Gallery: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
   }, []);
 
   const addItem = async () => {
-    const title = prompt("Tiêu đề ảnh:");
-    const desc = prompt("Mô tả:");
-    const category = prompt("Danh mục (Phong cảnh / Nhân vật):") as "Phong cảnh" | "Nhân vật";
-    if (title && desc && category) {
-      try {
-        await addDoc(collection(db, 'gallery'), {
-          title,
-          desc,
-          category,
-          seed: 'img-' + Date.now(),
-          align: items.length % 2 === 0 ? 'right' : 'left',
-          createdAt: serverTimestamp()
-        });
-      } catch (error) {
-        console.error("Lỗi khi thêm ảnh:", error);
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const title = prompt("Tiêu đề ảnh:");
+      const desc = prompt("Mô tả:");
+      const category = prompt("Danh mục (Phong cảnh / Nhân vật):") as "Phong cảnh" | "Nhân vật";
+
+      if (title && desc && category) {
+        try {
+          const imageUrl = await uploadImage(file, 'gallery');
+          await addDoc(collection(db, 'gallery'), {
+            title,
+            desc,
+            category,
+            seed: imageUrl, // Use the actual URL here now
+            isUploaded: true,
+            align: items.length % 2 === 0 ? 'right' : 'left',
+            createdAt: serverTimestamp()
+          });
+        } catch (error) {
+          console.error("Lỗi khi thêm ảnh:", error);
+          alert("Lỗi khi tải ảnh lên.");
+        }
       }
-    }
+    };
+    fileInput.click();
   };
 
   const deleteItem = async (id: string) => {
@@ -369,7 +383,7 @@ export const Gallery: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
               <div className="w-full md:w-1/2 aspect-[4/3] rounded-3xl overflow-hidden glass p-3 relative">
                 <div className="w-full h-full rounded-2xl overflow-hidden">
                   <img 
-                    src={`https://picsum.photos/seed/${item.seed}/1200/900`} 
+                    src={item.isUploaded ? item.seed : `https://picsum.photos/seed/${item.seed}/1200/900`} 
                     alt={item.title}
                     className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000 scale-105 hover:scale-100"
                     referrerPolicy="no-referrer"
@@ -387,7 +401,7 @@ export const Gallery: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
               <div className={`w-full md:w-1/2 space-y-6 ${item.align === 'left' ? 'text-left' : 'text-right'}`}>
                 <div className="text-[10px] uppercase tracking-[4px] text-water-light font-bold opacity-60">{item.category}</div>
                 <h3 className="text-4xl font-serif text-white">{item.title}</h3>
-                <p className="text-paper/60 font-serif text-lg leading-relaxed max-w-md mx-auto md:mx-0">
+                <p className="text-paper/60 font-serif text-lg leading-relaxed mx-auto md:mx-0">
                   {item.desc}
                 </p>
                 <div className="pt-4 flex items-center justify-start md:justify-end gap-4">
@@ -439,24 +453,39 @@ export const Archive: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
   }, [selectedStory]);
 
   const addStory = async () => {
-    const title = prompt("Tên bộ truyện:");
-    const desc = prompt("Mô tả ngắn:");
-    const isPrivate = confirm("Bộ truyện này có cần mật khẩu không?");
-    let password = "";
-    if (isPrivate) {
-      password = prompt("Nhập mật khẩu cho bộ truyện:") || "";
-    }
-    
-    if (title && desc) {
-      await addDoc(collection(db, 'stories'), {
-        title,
-        description: desc,
-        author: "nguyenhnhien",
-        isPrivate,
-        password,
-        createdAt: serverTimestamp()
-      });
-    }
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const title = prompt("Tên bộ truyện:");
+      const desc = prompt("Mô tả ngắn:");
+      const isPrivate = confirm("Bộ truyện này có cần mật khẩu không?");
+      let password = "";
+      if (isPrivate) {
+        password = prompt("Nhập mật khẩu cho bộ truyện:") || "";
+      }
+      
+      if (title && desc) {
+        try {
+          const coverUrl = await uploadImage(file, 'stories');
+          await addDoc(collection(db, 'stories'), {
+            title,
+            description: desc,
+            author: "nguyenhnhien",
+            coverUrl,
+            isPrivate,
+            password,
+            createdAt: serverTimestamp()
+          });
+        } catch (error) {
+          alert("Lỗi khi tải ảnh bìa lên.");
+        }
+      }
+    };
+    fileInput.click();
   };
 
   const addChapter = async () => {
@@ -549,8 +578,12 @@ export const Archive: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
           <div className="grid md:grid-cols-[1fr_2fr] gap-12">
             <div className="space-y-6">
               <div className="aspect-[3/4] glass rounded-3xl overflow-hidden p-3">
-                <div className="w-full h-full bg-water-surface rounded-2xl flex items-center justify-center">
-                  <Book size={60} className="opacity-10" />
+                <div className="w-full h-full bg-water-surface rounded-2xl flex items-center justify-center overflow-hidden">
+                  {selectedStory.coverUrl ? (
+                    <img src={selectedStory.coverUrl} className="w-full h-full object-cover" alt="Cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <Book size={60} className="opacity-10" />
+                  )}
                 </div>
               </div>
               <div className="space-y-4">
@@ -614,8 +647,12 @@ export const Archive: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
                 className="glass rounded-[32px] overflow-hidden flex flex-col group h-full relative"
               >
                 <div className="aspect-[16/10] bg-water-surface relative">
-                   <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                     <Book size={80} />
+                   <div className="absolute inset-0 flex items-center justify-center opacity-10 overflow-hidden">
+                     {story.coverUrl ? (
+                       <img src={story.coverUrl} className="w-full h-full object-cover" alt="Cover" referrerPolicy="no-referrer" />
+                     ) : (
+                       <Book size={80} />
+                     )}
                    </div>
                    {story.isPrivate && !isUnlocked && (
                      <div className="absolute inset-0 backdrop-blur-md bg-black/20 flex flex-col items-center justify-center p-6 space-y-4 text-center">
@@ -709,6 +746,47 @@ export const SystemSettings: React.FC<{ config: SiteConfig }> = ({ config }) => 
     }));
   };
 
+  const uploadAboutImage = async () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const url = await uploadImage(file, 'about');
+        setLocalConfig(prev => ({ ...prev, aboutImageUrl: url }));
+      } catch (e) {
+        alert("Lỗi tải ảnh.");
+      }
+    };
+    fileInput.click();
+  };
+
+  const uploadSlideImage = async () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const url = await uploadImage(file, 'bg');
+        setLocalConfig(prev => ({ ...prev, slideImages: [...prev.slideImages, url] }));
+      } catch (e) {
+        alert("Lỗi tải ảnh.");
+      }
+    };
+    fileInput.click();
+  };
+
+  const removeSlide = (idx: number) => {
+    setLocalConfig(prev => ({
+      ...prev,
+      slideImages: prev.slideImages.filter((_, i) => i !== idx)
+    }));
+  };
+
   return (
     <PageTransition>
       <div className="max-w-4xl mx-auto space-y-12 pb-20">
@@ -763,6 +841,45 @@ export const SystemSettings: React.FC<{ config: SiteConfig }> = ({ config }) => 
                   onChange={e => setLocalConfig({...localConfig, homeTagline: e.target.value})} 
                 />
               </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] uppercase tracking-widest opacity-40">Ảnh trang About Me</label>
+                <div className="flex gap-4 items-center">
+                  <input 
+                    className="bg-white/5 border border-white/10 p-3 rounded-lg text-sm flex-1 outline-none focus:border-water-light transition-colors"
+                    value={localConfig.aboutImageUrl} 
+                    onChange={e => setLocalConfig({...localConfig, aboutImageUrl: e.target.value})} 
+                    placeholder="URL ảnh..."
+                  />
+                  <button onClick={uploadAboutImage} className="p-3 glass rounded-lg hover:bg-white/10 transition-colors" title="Tải ảnh lên từ thiết bị">
+                    <Upload size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] uppercase tracking-widest opacity-40">Danh sách hình nền (Slideshow)</label>
+                <div className="grid grid-cols-2 gap-4">
+                  {localConfig.slideImages.map((img, idx) => (
+                    <div key={idx} className="relative aspect-video rounded-xl overflow-hidden glass p-1 group">
+                       <img src={img} className="w-full h-full object-cover rounded-lg" alt={`Slide ${idx}`} />
+                       <button 
+                        onClick={() => removeSlide(idx)}
+                        className="absolute top-2 right-2 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                       >
+                         <XCircle size={14} />
+                       </button>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={uploadSlideImage}
+                    className="aspect-video rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 hover:bg-white/5 transition-colors group"
+                  >
+                    <Plus size={24} className="opacity-20 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+                    <span className="text-[8px] uppercase tracking-widest opacity-40">Thêm ảnh mới</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] uppercase tracking-widest opacity-40">Chế độ hình nền</label>
                 <select 

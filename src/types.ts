@@ -21,6 +21,7 @@ export interface SiteConfig {
   pageSubtitles: Record<string, string>;
   bgMode: 'water' | 'slideshow' | 'auto';
   slideImages: string[];
+  aboutImageUrl: string;
 }
 
 export interface Story {

@@ -28,13 +28,14 @@ export const DEFAULT_CONFIG: SiteConfig = {
     gallery: "Nơi những mảnh ghép ký ức và giấc mơ hội ngộ",
     archive: "Những câu chuyện chưa kể"
   },
-  bgMode: 'auto',
+  bgMode: 'slideshow',
   slideImages: [
     'input_file_0.png',
     'https://picsum.photos/seed/nature/1920/1080',
     'https://picsum.photos/seed/ocean/1920/1080',
     'https://picsum.photos/seed/mist/1920/1080',
-  ]
+  ],
+  aboutImageUrl: 'https://picsum.photos/seed/vintage-writer/800/1000'
 };
 
 export function subscribeToConfig(callback: (config: SiteConfig) => void) {

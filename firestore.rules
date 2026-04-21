@@ -47,7 +47,7 @@ service cloud.firestore {
     // Gallery Item Validation
     function isValidGalleryItem(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 200
-          && data.desc is string && data.desc.size() > 0 && data.desc.size() <= 1000
+          && data.desc is string && data.desc.size() > 0 && data.desc.size() <= 20000
           && data.category in ['Phong cảnh', 'Nhân vật']
           && data.seed is string && data.seed.size() > 0
           && data.align in ['left', 'right']

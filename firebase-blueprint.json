@@ -49,7 +49,8 @@
         "pageTitles": { "type": "object" },
         "pageSubtitles": { "type": "object" },
         "bgMode": { "type": "string", "enum": ["water", "slideshow", "auto"] },
-        "slideImages": { "type": "array", "items": { "type": "string" } }
+        "slideImages": { "type": "array", "items": { "type": "string" } },
+        "aboutImageUrl": { "type": "string" }
       }
     },
     "Story": {

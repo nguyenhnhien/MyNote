@@ -30,7 +30,7 @@ export const DEFAULT_CONFIG: SiteConfig = {
   },
   bgMode: 'slideshow',
   slideImages: [
-    'input_file_0.png',
+    'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?q=80&w=2072&auto=format&fit=crop',
     'https://picsum.photos/seed/nature/1920/1080',
     'https://picsum.photos/seed/ocean/1920/1080',
     'https://picsum.photos/seed/mist/1920/1080',

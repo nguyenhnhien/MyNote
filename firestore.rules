@@ -31,7 +31,7 @@ service cloud.firestore {
     // Poem Validation
     function isValidPoem(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 200
-          && data.content is string && data.content.size() > 0 && data.content.size() <= 10000
+          && data.content is string && data.content.size() > 0 && data.content.size() <= 20000
           && data.date is string && data.date.size() > 0 && data.date.size() <= 100
           && data.createdAt == request.time;
     }
@@ -39,7 +39,7 @@ service cloud.firestore {
     // Prose Validation
     function isValidProse(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 200
-          && data.excerpt is string && data.excerpt.size() > 0 && data.excerpt.size() <= 1000
+          && data.excerpt is string && data.excerpt.size() > 0 && data.excerpt.size() <= 20000
           && data.date is string && data.date.size() > 0 && data.date.size() <= 100
           && data.createdAt == request.time;
     }
@@ -51,6 +51,7 @@ service cloud.firestore {
           && data.category in ['Phong cảnh', 'Nhân vật']
           && data.seed is string && data.seed.size() > 0
           && data.align in ['left', 'right']
+          && (data.get('isUploaded', false) == true || data.get('isUploaded', false) == false)
           && data.createdAt == request.time;
     }
 

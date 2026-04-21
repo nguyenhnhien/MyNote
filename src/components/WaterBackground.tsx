@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { SiteConfig } from '../types';
 
 const PaperBoat = ({ delay = 0, duration = 20, startY = 50 }) => {
   return (
@@ -40,15 +41,13 @@ const Ripple: React.FC<{ x: number; y: number }> = ({ x, y }) => (
   />
 );
 
-import { SiteConfig } from '../types';
-
 export const WaterBackground: React.FC<{ config?: SiteConfig }> = ({ config }) => {
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
   const [bgMode, setBgMode] = useState<'water' | 'slideshow'>('water');
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const slideImages = config?.slideImages || [
-    'input_file_0.png',
+  const slideImages = config?.slideImages?.length ? config.slideImages : [
+    'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?q=80&w=2072&auto=format&fit=crop',
     'https://picsum.photos/seed/nature/1920/1080',
     'https://picsum.photos/seed/ocean/1920/1080',
     'https://picsum.photos/seed/mist/1920/1080',

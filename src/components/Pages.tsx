@@ -85,13 +85,40 @@ export const About: React.FC<{ config: SiteConfig, isAdmin: boolean }> = ({ conf
       
       <div className="grid md:grid-cols-[2fr_3fr] gap-12 items-center">
         <div className="relative group">
-          <div className="aspect-[4/5] bg-water-surface rounded-2xl overflow-hidden border border-white/10">
+          <div className="aspect-[4/5] bg-water-surface rounded-2xl overflow-hidden border border-white/10 relative">
              <img 
                src={config.aboutImageUrl || "https://picsum.photos/seed/vintage-writer/800/1000"} 
                alt="About me" 
-               className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+               className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000"
                referrerPolicy="no-referrer"
              />
+             {isAdmin && (
+               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                 <button 
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = async (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        try {
+                          const url = await uploadImage(file, 'about');
+                          await updateConfig({ aboutImageUrl: url });
+                          alert("Đã cập nhật ảnh About me!");
+                        } catch (err) {
+                          alert("Lỗi khi tải ảnh.");
+                        }
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="p-4 glass rounded-full hover:scale-110 transition-transform"
+                 >
+                   <Camera size={24} className="text-water-light" />
+                 </button>
+               </div>
+             )}
           </div>
           <div className="absolute -bottom-6 -right-6 w-32 h-32 glass rounded-full flex items-center justify-center animate-spin-slow">
             <span className="text-[10px] uppercase tracking-widest text-center px-4 font-bold opacity-40">Creative Soul • Wanderer • Dreamer</span>
@@ -149,8 +176,8 @@ export const Poems: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ isAd
           createdAt: serverTimestamp()
         });
       } catch (error) {
-        console.error("Lỗi khi bài thơ:", error);
-        alert("Lỗi khi lưu bài thơ. Vui lòng kiểm tra quyền truy cập.");
+        console.error("Lỗi khi thêm bài thơ:", error);
+        alert("Lỗi khi lưu bài thơ. Có thể nội dung quá dài hoặc bạn chưa đăng nhập Admin.");
       }
     }
   };
@@ -239,6 +266,7 @@ export const Prose: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ isAd
         });
       } catch (error) {
         console.error("Lỗi khi thêm bài viết:", error);
+        alert("Lỗi khi lưu bài viết. Có thể nội dung quá dài hoặc bạn chưa đăng nhập Admin.");
       }
     }
   };
@@ -382,12 +410,16 @@ export const Gallery: React.FC<{ isAdmin: boolean, config: SiteConfig }> = ({ is
             >
               <div className="w-full md:w-1/2 aspect-[4/3] rounded-3xl overflow-hidden glass p-3 relative">
                 <div className="w-full h-full rounded-2xl overflow-hidden">
-                  <img 
-                    src={item.isUploaded ? item.seed : `https://picsum.photos/seed/${item.seed}/1200/900`} 
-                    alt={item.title}
-                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000 scale-105 hover:scale-100"
-                    referrerPolicy="no-referrer"
-                  />
+                  {item.seed ? (
+                    <img 
+                      src={item.isUploaded ? item.seed : `https://picsum.photos/seed/${item.seed}/1200/900`} 
+                      alt={item.title || "Gallery Item"}
+                      className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000 scale-105 hover:scale-100"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white/5 italic opacity-20">Ảnh đang chờ...</div>
+                  )}
                 </div>
                 {isAdmin && (
                   <button 
@@ -843,15 +875,17 @@ export const SystemSettings: React.FC<{ config: SiteConfig }> = ({ config }) => 
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] uppercase tracking-widest opacity-40">Ảnh trang About Me</label>
-                <div className="flex gap-4 items-center">
-                  <input 
-                    className="bg-white/5 border border-white/10 p-3 rounded-lg text-sm flex-1 outline-none focus:border-water-light transition-colors"
-                    value={localConfig.aboutImageUrl} 
-                    onChange={e => setLocalConfig({...localConfig, aboutImageUrl: e.target.value})} 
-                    placeholder="URL ảnh..."
-                  />
-                  <button onClick={uploadAboutImage} className="p-3 glass rounded-lg hover:bg-white/10 transition-colors" title="Tải ảnh lên từ thiết bị">
-                    <Upload size={18} />
+                <div className="flex flex-col gap-4">
+                  {localConfig.aboutImageUrl && (
+                    <div className="w-32 aspect-[4/5] rounded-xl overflow-hidden glass p-1">
+                      <img src={localConfig.aboutImageUrl} className="w-full h-full object-cover rounded-lg" alt="About Me Preview" />
+                    </div>
+                  )}
+                  <button 
+                    onClick={uploadAboutImage} 
+                    className="flex items-center justify-center gap-2 px-6 py-3 glass rounded-xl hover:bg-white/10 transition-colors text-xs uppercase tracking-widest"
+                  >
+                    <Upload size={16} /> {localConfig.aboutImageUrl ? "Thay đổi ảnh" : "Tải ảnh lên"}
                   </button>
                 </div>
               </div>
